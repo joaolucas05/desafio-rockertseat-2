@@ -9,20 +9,109 @@ app.use(cors());
 
 const users = [];
 
+function userExistsByUsername(username){
+  const data = users.find(users=>users.username === username);
+  if(!data){
+    return false
+  }
+
+  return data;
+}
+
+function userExistsById(id){
+  const data = users.find(users=>users.id === id);
+  if(!data){
+    return false
+  }
+
+  return data;
+}
+
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const usernameAlreadyExists = userExistsByUsername(username);
+
+  if(!usernameAlreadyExists){
+    return response.status(404).json({
+      error: "User not Found"
+    })
+  }
+
+  request.user = usernameAlreadyExists;
+  return next();
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  
+  const { user } = request;
+
+  const plan = user.pro;
+
+  if(!plan){
+    const todoCount = user.todos.length;
+    if(todoCount >= 10){
+      return response.status(403).json({
+        error: "You have more 10 todos"
+      })
+    }
+    next();
+  }
+
+  return next();
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params
+
+  //Valid if user exist
+
+  const user = userExistsByUsername(username);
+
+  if(!user){
+    return response.status(404).json({
+      error: "User not found"
+    })
+  } 
+
+  const idValid = validate(id);
+
+  if(!idValid){
+    return response.status(400).json({
+      error: "Token invalid"
+    })
+  }
+
+  const todo = user.todos.find(todos=>todos.id === id);
+
+  if(!todo){
+    return response.status(404).json({
+      error: "Todo Not Found"
+    })
+  }
+
+  request.user = user;
+  request.todo = todo;
+
+  return next();
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+  const userExist = userExistsById(id);
+
+  if(!userExist){
+    return response.status(404).json({
+      error: "User Not Exist"
+    });
+  }
+
+  request.user = userExist;
+  return next();
+
 }
 
 app.post('/users', (request, response) => {
